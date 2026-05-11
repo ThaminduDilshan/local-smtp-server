@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local SMTP Inbox</title>
+  <style>
+    :root {
+      --bg: #f3f5f6;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #6b7a87;
+      --brand: #0b6e99;
+      --border: #d8e1e8;
+      --danger: #b42318;
+      --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Helvetica, sans-serif;
+      background:
+        radial-gradient(1000px 480px at -10% -20%, #dff3ff 0%, transparent 60%),
+        radial-gradient(700px 380px at 110% -10%, #ffeecd 0%, transparent 55%),
+        var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 16px;
+    }
+
+    .top {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--brand); }
+
+    .danger {
+      border-color: #f6c9c5;
+      color: var(--danger);
+      background: #fff5f4;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 16px;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .section-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #111827;
+      background: #f8fafc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-panel {
+      padding: 12px;
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    .ghost-btn:hover {
+      border-color: var(--brand);
+    }
+
+    .config-list {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      gap: 8px;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+
+    .config-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fbfcfd;
+      padding: 7px;
+      min-width: 0;
+      width: 280px;
+      flex: 0 0 auto;
+    }
+
+    .config-item label {
+      display: block;
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .config-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .config-value {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px;
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      background: #fff;
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .copy-btn {
+      padding: 6px 9px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .list {
+      max-height: none;
+      min-height: 0;
+      height: 100%;
+      overflow: auto;
+    }
+
+    .list-card {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+      overflow: hidden;
+      height: 100%;
+      flex: 1;
+    }
+
+    .config-strip {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .item {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 140ms ease;
+      position: relative;
+    }
+
+    .item:hover { background: #f6fbff; }
+
+    .item.active {
+      background: #e3f2fb;
+      border-left: 4px solid #0b6e99;
+      padding-left: 10px;
+    }
+
+    .item.active::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #0b6e99;
+      position: absolute;
+      right: 12px;
+      top: 14px;
+      opacity: 0.35;
+    }
+
+    .subject-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 4px;
+    }
+
+    .subject-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .subject {
+      font-weight: 600;
+      margin: 0;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .unread-pill {
+      border: 1px solid #8bbfd6;
+      background: #eef8fd;
+      color: #0b6e99;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .delete-btn {
+      border: 1px solid #e3e8ee;
+      background: #fff;
+      color: #748392;
+      border-radius: 999px;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      border-color: #f0b7b2;
+      background: #fff4f3;
+      color: #b42318;
+    }
+
+    .item.unread .subject {
+      font-weight: 800;
+    }
+
+    .item.unread .meta {
+      font-weight: 600;
+      color: #3f5263;
+    }
+
+    .item:not(.unread) .subject {
+      opacity: 0.72;
+      font-weight: 550;
+    }
+
+    .item:not(.unread) .meta {
+      opacity: 0.62;
+    }
+
+    .item.active .subject,
+    .item.active .meta {
+      opacity: 1;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pane {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+    }
+
+    .headers {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .headers strong {
+      color: #111827;
+      display: inline-block;
+      width: 75px;
+    }
+
+    .body {
+      padding: 14px;
+      overflow: auto;
+      background: #fbfcfd;
+      min-height: 220px;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.87rem;
+      line-height: 1.45;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 18px;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .shell {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+
+      .left-column {
+        max-height: none;
+      }
+
+      .list {
+        max-height: none;
+      }
+
+      .config-item {
+        width: 240px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="top">
+      <div>
+        <h1 class="title">Local SMTP Inbox</h1>
+        <p class="subtitle">Catch and inspect outgoing emails</p>
+      </div>
+      <div class="actions">
+        <button id="refreshBtn">Refresh</button>
+        <button id="clearBtn" class="danger">Clear</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="left-column">
+        <div class="card list-card">
+          <div class="section-head">Email List</div>
+          <div class="list" id="emailList"></div>
+        </div>
+      </div>
+
+      <div class="card pane">
+        <div class="headers" id="headers"></div>
+        <div class="body" id="body"></div>
+      </div>
+    </div>
+
+    <div class="config-strip">
+      <div class="section-head">
+        <span>Configurations</span>
+        <button id="copyConfigBtn" class="ghost-btn">Copy YAML</button>
+      </div>
+      <div class="config-panel">
+        <div class="config-list" id="configGrid">
+          <div class="empty">Loading config...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const emailListEl = document.getElementById("emailList");
+    const headersEl = document.getElementById("headers");
+    const bodyEl = document.getElementById("body");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const configGridEl = document.getElementById("configGrid");
+    const copyConfigBtn = document.getElementById("copyConfigBtn");
+
+    let emails = [];
+    let selectedId = null;
+    let config = null;
+    let pollInterval = 3000;
+    let pollTimer = null;
+
+    function buildRuntimeYaml() {
+      if (!config) {
+        return "";
+      }
+      const authMethods = Array.isArray(config.smtp_auth_methods)
+        ? config.smtp_auth_methods.join(", ")
+        : String(config.smtp_auth_methods || "");
+      return [
+        `smtp_host: ${config.smtp_host}`,
+        `smtp_port: ${config.smtp_port}`,
+        `smtp_username: ${config.smtp_username}`,
+        `smtp_password: ${config.smtp_password}`,
+        `smtp_auth_methods: ${authMethods}`,
+        `smtp_tls: ${config.smtp_tls}`,
+        `http_host: ${config.http_host}`,
+        `http_port: ${config.http_port}`,
+        `max_messages: ${config.max_messages}`,
+        `refresh_ms: ${config.refresh_ms}`,
+      ].join("\n");
+    }
+
+    async function copyTextWithFeedback(text, button, idleText, successText) {
+      if (!text) {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (_) {
+        return;
+      }
+      button.textContent = successText;
+      setTimeout(() => {
+        button.textContent = idleText;
+      }, 900);
+    }
+
+    function fmtDate(value) {
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? value : d.toLocaleString();
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function renderList() {
+      if (!emails.length) {
+        emailListEl.innerHTML = '<div class="empty">No emails yet</div>';
+        return;
+      }
+
+      emailListEl.innerHTML = emails.map((email) => {
+        const isUnread = !email.is_read;
+        const cls = ["item", email.id === selectedId ? "active" : "", isUnread ? "unread" : ""]
+          .filter(Boolean)
+          .join(" ");
+        const subject = email.subject || "(no subject)";
+        const unreadBadge = isUnread ? '<span class="unread-pill">Unread</span>' : "";
+        return `
+          <div class="${cls}" data-id="${email.id}">
+            <div class="subject-line">
+              <p class="subject">${escapeHtml(subject)}</p>
+              <div class="subject-actions">
+                ${unreadBadge}
+                <button class="delete-btn" data-delete-id="${email.id}" title="Delete email" aria-label="Delete email">&times;</button>
+              </div>
+            </div>
+            <div class="meta">From: ${escapeHtml(email.header_from || email.mail_from || "-")}</div>
+            <div class="meta">To: ${escapeHtml(email.header_to || email.rcpt_to.join(", ") || "-")}</div>
+            <div class="meta">${escapeHtml(fmtDate(email.received_at))}</div>
+          </div>
+        `;
+      }).join("");
+
+      document.querySelectorAll(".item").forEach((item) => {
+        item.addEventListener("click", async () => {
+          const id = Number(item.dataset.id);
+          await openEmail(id);
+        });
+      });
+
+      document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          const id = Number(btn.dataset.deleteId);
+          await deleteEmail(id);
+        });
+      });
+    }
+
+    async function openEmail(id) {
+      selectedId = id;
+      const email = emails.find((it) => it.id === id);
+      if (email && !email.is_read) {
+        email.is_read = true;
+        fetch(`/api/emails/${id}/read`, { method: "PATCH" }).catch(() => {});
+      }
+      renderList();
+      renderSelected();
+    }
+
+    function renderSelected() {
+      const email = emails.find((it) => it.id === selectedId);
+      if (!email) {
+        headersEl.innerHTML = '<div class="empty">Select an email</div>';
+        bodyEl.innerHTML = '<div class="empty">Email body will appear here</div>';
+        return;
+      }
+
+      headersEl.innerHTML = `
+        <div><strong>Subject</strong>${escapeHtml(email.subject || "(no subject)")}</div>
+        <div><strong>From</strong>${escapeHtml(email.header_from || email.mail_from || "-")}</div>
+        <div><strong>To</strong>${escapeHtml(email.header_to || email.rcpt_to.join(", ") || "-")}</div>
+        <div><strong>At</strong>${escapeHtml(fmtDate(email.received_at))}</div>
+      `;
+
+      if (email.html_body) {
+        bodyEl.innerHTML = email.html_body;
+        decorateEmailHtml();
+      } else {
+        bodyEl.innerHTML = `<pre>${escapeHtml(email.text_body || email.raw || "")}</pre>`;
+      }
+    }
+
+    function renderConfigItem(label, value, options = {}) {
+      const safeValue = String(value ?? "");
+      const inputType = options.secret ? "password" : "text";
+      return `
+        <div class="config-item">
+          <label>${escapeHtml(label)}</label>
+          <div class="config-row">
+            <input class="config-value" type="${inputType}" readonly value="${escapeHtml(safeValue)}">
+            <button class="copy-btn" data-copy="${escapeHtml(safeValue)}">Copy</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderConfig() {
+      if (!config) {
+        configGridEl.innerHTML = '<div class="empty">No config available</div>';
+        return;
+      }
+
+      const authMethods = Array.isArray(config.smtp_auth_methods)
+        ? config.smtp_auth_methods.join(", ")
+        : String(config.smtp_auth_methods || "-");
+
+      configGridEl.innerHTML = [
+        renderConfigItem("Host", config.smtp_host),
+        renderConfigItem("Port", config.smtp_port),
+        renderConfigItem("Username", config.smtp_username),
+        renderConfigItem("Password", config.smtp_password, { secret: true }),
+        renderConfigItem("Auth", authMethods),
+        renderConfigItem("TLS", config.smtp_tls ? "Enabled" : "Disabled"),
+      ].join("");
+
+      configGridEl.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const text = btn.dataset.copy || "";
+          await copyTextWithFeedback(text, btn, "Copy", "Copied");
+        });
+      });
+    }
+
+    function decorateEmailHtml() {
+      bodyEl.querySelectorAll("a[href]").forEach((link) => {
+        link.setAttribute("target", "_blank");
+        link.setAttribute("rel", "noopener noreferrer");
+      });
+
+      bodyEl.querySelectorAll("form").forEach((form) => {
+        form.setAttribute("target", "_blank");
+      });
+    }
+
+    async function loadConfig() {
+      const res = await fetch("/api/config", { cache: "no-store" });
+      const data = await res.json();
+      config = data.config || null;
+
+      if (config && Number.isFinite(Number(config.refresh_ms))) {
+        pollInterval = Math.max(500, Number(config.refresh_ms));
+      }
+
+      renderConfig();
+    }
+
+    async function loadEmails() {
+      const res = await fetch("/api/emails", { cache: "no-store" });
+      const data = await res.json();
+      emails = data.emails || [];
+
+      if (!emails.length) {
+        selectedId = null;
+      } else if (!emails.find((e) => e.id === selectedId)) {
+        selectedId = emails[0].id;
+      }
+
+      renderList();
+      renderSelected();
+    }
+
+    async function clearEmails() {
+      await fetch("/api/emails", { method: "DELETE" });
+      await loadEmails();
+    }
+
+    async function deleteEmail(id) {
+      await fetch(`/api/emails/${id}`, { method: "DELETE" });
+      if (selectedId === id) {
+        selectedId = null;
+      }
+      await loadEmails();
+    }
+
+    function resetPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+      }
+      pollTimer = setInterval(loadEmails, pollInterval);
+    }
+
+    refreshBtn.addEventListener("click", loadEmails);
+    clearBtn.addEventListener("click", clearEmails);
+    copyConfigBtn.addEventListener("click", async () => {
+      await copyTextWithFeedback(buildRuntimeYaml(), copyConfigBtn, "Copy YAML", "Copied");
+    });
+
+    async function init() {
+      await loadConfig();
+      await loadEmails();
+      resetPolling();
+    }
+
+    init();
+  </script>
+</body>
+</html>

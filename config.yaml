@@ -1,0 +1,10 @@
+smtp_host: 127.0.0.1
+smtp_port: 2525
+smtp_username: dev
+smtp_password: dev
+smtp_auth_methods: PLAIN, LOGIN, CRAM-MD5
+smtp_tls: false
+http_host: 127.0.0.1
+http_port: 8025
+max_messages: 500
+refresh_ms: 3000

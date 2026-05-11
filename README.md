@@ -1,13 +1,18 @@
 # Local SMTP Server
 
-A tiny local SMTP server that captures emails and provides a web inbox UI.
+A tiny local SMTP server that captures emails with a web inbox UI.
 
-YAML config works out of the box using the built-in parser.
-If you want full YAML feature support, optionally install PyYAML:
+<img width="800" height="400" alt="Screenshot 2026-05-12 at 12 32 33 AM" src="https://github.com/user-attachments/assets/fe2f6093-a54b-4177-9c58-ba291e7f1e61" />
 
-```bash
-pip install pyyaml
-```
+## Prerequisites
+
+- Python3
+
+> YAML config works out of the box using the built-in parser. If you want full YAML feature support, optionally install PyYAML:
+
+  ```bash
+  pip install pyyaml
+  ```
 
 ## Run
 
@@ -42,9 +47,9 @@ refresh_ms: 3000
 
 CLI flags still work and override values from the config file.
 
-## Thunder config example
+## ThunderID config example
 
-Use this in your Thunder config file:
+Use this in your [ThunderID](https://github.com/thunder-id/thunder-id) deployment.yaml file:
 
 ```yaml
 email:
@@ -57,10 +62,6 @@ email:
     enable_start_tls: false
     enable_authentication: true
 ```
-
-Notes:
-- `enable_start_tls` must be `false` for this local server.
-- Authentication is accepted for any credentials in local dev mode.
 
 ## Optional flags
 
